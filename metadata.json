@@ -1,0 +1,6 @@
+{
+  "name": "MAT DAW Split Pro",
+  "description": "macOS Native DAW & AI Stem Separator with Sheet Music Transcription",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
