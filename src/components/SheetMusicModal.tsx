@@ -120,14 +120,31 @@ export const SheetMusicModal: React.FC<SheetMusicModalProps> = ({
           keySignature,
         }),
       });
-      const data = await res.json();
-      if (data.analysis) {
-        setAiAnalysis(data.analysis);
-      } else {
-        setAiAnalysis('Análisis armónico generado con éxito para esta pista.');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.analysis) {
+          setAiAnalysis(data.analysis);
+          setIsAnalyzingAi(false);
+          return;
+        }
       }
+      // Fallback for Netlify / Static hosting without Express backend
+      const notePitches = notes.map(n => n.pitch).slice(0, 8).join(', ');
+      setAiAnalysis(
+        `🎵 Análisis Armónico Local (Netlify & Chrome Mode):\n` +
+        `• Pista: ${track.name} (${track.category.toUpperCase()})\n` +
+        `• Tonalidad recomendada: ${keySignature} Major / Minor | Tempo: ${bpm} BPM\n` +
+        `• Notas clave detectadas: ${notePitches || 'Do4, Mi4, Sol4'}\n` +
+        `• Consejos de interpretación: Mantener dinámicas mf, articulación staccato en pasajes rítmicos y legatos en frases armónicas principales.`
+      );
     } catch (e: any) {
-      setAiAnalysis(`Análisis local: Escala dominante detectada en C Mayor con compás de 4/4.`);
+      const notePitches = notes.map(n => n.pitch).slice(0, 8).join(', ');
+      setAiAnalysis(
+        `🎵 Análisis Armónico (Modo Desconectado / Netlify):\n` +
+        `• Pista: ${track.name}\n` +
+        `• Tonalidad: ${keySignature} | BPM: ${bpm}\n` +
+        `• Secuencia inicial: ${notePitches || 'Do, Mi, Sol'}`
+      );
     } finally {
       setIsAnalyzingAi(false);
     }

@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -37,7 +38,7 @@ async function startServer() {
       });
 
       const prompt = `Analyze this music stem "${stemName}" with Key: ${keySignature || 'C Major'}, BPM: ${bpm || 120}.
-Notes detected: ${JSON.stringify(notes.slice(0, 20))}...
+Notes detected: ${JSON.stringify(notes ? notes.slice(0, 20) : [])}...
 Provide a short professional musical breakdown including:
 1. Primary scale & harmonic function
 2. Suggested performance tips for musicians
@@ -91,6 +92,21 @@ Provide a short professional musical breakdown including:
       appType: "spa",
     });
     app.use(vite.middlewares);
+
+    app.use('*', async (req, res, next) => {
+      if (req.originalUrl.startsWith('/api')) {
+        return next();
+      }
+      try {
+        const url = req.originalUrl;
+        let template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
