@@ -141,7 +141,8 @@ export class AudioEngine {
         effectiveGain = 0;
       }
 
-      entry.gainNode.gain.setValueAtTime(effectiveGain, ctx.currentTime);
+      entry.gainNode.gain.setValueAtTime(0, ctx.currentTime);
+      entry.gainNode.gain.linearRampToValueAtTime(effectiveGain, ctx.currentTime + 0.015);
 
       // Start buffer source from current offset
       sourceNode.start(ctx.currentTime, this.pauseOffset);

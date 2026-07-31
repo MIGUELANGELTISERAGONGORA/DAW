@@ -236,6 +236,10 @@ function synthDrumChannel(buffer: AudioBuffer, sampleRate: number, duration: num
     const hatNoise = (Math.random() * 2 - 1) * Math.exp(-subBeatPos * 40);
     sample += hatNoise * 0.2;
 
+    // Smooth 15ms start fade to prevent click/noise at t=0
+    const startFade = Math.min(1.0, t / 0.015);
+    sample *= startFade;
+
     left[i] = sample;
     right[i] = sample;
   }

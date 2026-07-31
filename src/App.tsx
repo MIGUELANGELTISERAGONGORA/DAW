@@ -4,6 +4,7 @@ import { STEM_CATEGORIES } from './data/categories';
 import { createDemoTracks, computeResidualOtherBuffer } from './data/demoAudio';
 import { AudioEngine } from './lib/audioEngine';
 import { detectPitchesFromBuffer } from './lib/pitchDetection';
+import { separateAudioBufferDSP } from './lib/dspStemSeparator';
 
 import { MacTitleBar } from './components/MacTitleBar';
 import { AudioDropzone } from './components/AudioDropzone';
@@ -163,55 +164,49 @@ export default function App() {
     if (!currentFile) return;
 
     setProgress({
-      stage: 'Iniciando pipeline de separación local ONNX',
+      stage: 'Iniciando pipeline de separación local DSP',
       progress: 5,
       currentModel: 'HTDemucs v4 6-Stem',
-      logs: ['[0.0s] Cargando pesos del modelo HTDemucs v4 ONNX...'],
+      logs: [`[0.0s] Analizando buffer de audio: ${currentFile.name} (${currentFile.duration.toFixed(1)}s)...`],
       isProcessing: true,
       isCancelled: false,
     });
 
-    addLog('Iniciando separación de pistas con motor local ONNX C++...');
+    addLog(`Iniciando separación real de pistas para: ${currentFile.name}...`);
 
-    // Simulate multi-stage separation process
-    const stages = [
-      { p: 25, m: 'HTDemucs v4 6-Stem', msg: 'Aislando Voces Principales & Coros...' },
-      { p: 50, m: 'MDX-Net Vocals HQ', msg: 'Aislando Batería Completa (Kick, Snare, Hats)...' },
-      { p: 75, m: 'DrumSep 4S Net', msg: 'Separando Bajo, Guitarras y Piano...' },
-      { p: 90, m: 'Residual Other Matrix', msg: 'Calculando residuo matemático exacto "Other" (Mix - Stems)...' },
-      { p: 100, m: 'Finalized', msg: 'Exportación completada en carpeta elegida.' },
-    ];
-
-    for (const st of stages) {
-      await new Promise((r) => setTimeout(r, 600));
-      setProgress((prev) => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          progress: st.p,
-          stage: st.msg,
-          currentModel: st.m,
-          logs: [...prev.logs, `[${(st.p / 20).toFixed(1)}s] ${st.msg}`],
-        };
-      });
-    }
-
-    // Generate tracks from current file or synth demo
     const ctx = audioEngineRef.current.getAudioContext();
-    const demo = await createDemoTracks(ctx);
 
-    // Filter tracks based on selectedStems categories
-    let generatedTracks = demo.tracks.filter((t) => selectedStems.includes(t.category));
-
-    // If 'other' is selected in selectedStems, calculate exact complementary residual Other buffer!
-    if (selectedStems.includes('other')) {
-      const selectedBufs = generatedTracks.map((t) => t.buffer);
-      const otherTrack = computeResidualOtherBuffer(ctx, currentFile.audioBuffer || demo.tracks[0].buffer, selectedBufs);
-      generatedTracks.push(otherTrack);
+    // Get input audio buffer from user file or demo audio
+    let inputBuffer = currentFile.audioBuffer;
+    if (!inputBuffer) {
+      const demo = await createDemoTracks(ctx);
+      inputBuffer = demo.tracks[0].buffer;
     }
 
-    setTracks(generatedTracks);
-    addLog(`Separación finalizada. ${generatedTracks.length} pistas listos en el mezclador.`);
+    const separatedTracks = await separateAudioBufferDSP(
+      ctx,
+      inputBuffer,
+      selectedStems,
+      (percent, stage, model) => {
+        setProgress((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            progress: percent,
+            stage,
+            currentModel: model,
+            logs: [...prev.logs, `[${(percent / 20).toFixed(1)}s] ${stage}`],
+          };
+        });
+      }
+    );
+
+    setTracks(separatedTracks);
+    addLog(`Separación completada con éxito. ${separatedTracks.length} pistas reales aisladas en el mezclador.`);
+
+    setTimeout(() => {
+      setProgress(null);
+    }, 1000);
   };
 
   // Audio Playback Controls
