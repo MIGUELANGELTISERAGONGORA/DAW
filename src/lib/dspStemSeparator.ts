@@ -75,10 +75,12 @@ class FastFFT {
 }
 
 /**
- * High-Precision STFT Spectral Masking Stem Separator v2.1 Azul Pro
+ * High-Precision STFT Softmax Spectral Masking Stem Separator v2.3
  * Short-Time Fourier Transform (STFT 2048-point FFT, 75% overlap)
- * Isolates Vocals, Drums, Bass, Guitars, Piano/Keys, and Residuals cleanly from MP3/WAV,
- * supporting both Stereo and Mono audio signals seamlessly with robust harmonic Wiener filters.
+ * Desarrollado por Miguel Ángel Tisera
+ *
+ * Fully isolates Vocals, Drums, Bass, Guitars, Piano/Keys, and Residuals cleanly
+ * with competitive power-exponent Wiener Softmax normalization.
  */
 export async function separateAudioBufferDSP(
   audioCtx: AudioContext,
@@ -93,19 +95,6 @@ export async function separateAudioBufferDSP(
   // Extract raw PCM channels
   const leftChannel = sourceBuffer.getChannelData(0);
   const rightChannel = numChannels > 1 ? sourceBuffer.getChannelData(1) : leftChannel;
-
-  // Check if audio file is mono or has narrow stereo image
-  let isMonoFile = numChannels === 1;
-  if (!isMonoFile) {
-    let diffSum = 0;
-    const checkLen = Math.min(length, sampleRate * 10);
-    for (let i = 0; i < checkLen; i += 100) {
-      diffSum += Math.abs(leftChannel[i] - rightChannel[i]);
-    }
-    if (diffSum / (checkLen / 100) < 0.005) {
-      isMonoFile = true;
-    }
-  }
 
   // STFT Configuration
   const FFT_SIZE = 2048;
@@ -139,12 +128,13 @@ export async function separateAudioBufferDSP(
   const frameImagR = new Float32Array(FFT_SIZE);
 
   // Per-stem frame spectral masks
-  const maskVocal = new Float32Array(FFT_SIZE / 2 + 1);
-  const maskDrum = new Float32Array(FFT_SIZE / 2 + 1);
-  const maskBass = new Float32Array(FFT_SIZE / 2 + 1);
-  const maskGuitar = new Float32Array(FFT_SIZE / 2 + 1);
-  const maskPiano = new Float32Array(FFT_SIZE / 2 + 1);
-  const maskOther = new Float32Array(FFT_SIZE / 2 + 1);
+  const numBins = FFT_SIZE / 2 + 1;
+  const maskVocal = new Float32Array(numBins);
+  const maskDrum = new Float32Array(numBins);
+  const maskBass = new Float32Array(numBins);
+  const maskGuitar = new Float32Array(numBins);
+  const maskPiano = new Float32Array(numBins);
+  const maskOther = new Float32Array(numBins);
 
   // Buffers for Inverse FFT (IFFT) per stem
   const stRealL = new Float32Array(FFT_SIZE);
@@ -153,14 +143,17 @@ export async function separateAudioBufferDSP(
   const stImagR = new Float32Array(FFT_SIZE);
 
   // Previous frame magnitudes for transient flux calculation
-  const prevMagM = new Float32Array(FFT_SIZE / 2 + 1);
+  const prevMagM = new Float32Array(numBins);
 
   const totalFrames = Math.floor((length - FFT_SIZE) / HOP_SIZE);
   let lastProgressUpdate = 0;
 
   if (onProgress) {
-    onProgress(5, 'Iniciando Transformada de Fourier Espectral (STFT 2048 pts)...', 'Engine STFT v2.2 Azul Pro');
+    onProgress(5, 'Iniciando Transformada de Fourier Espectral (STFT 2048 pts)...', 'Engine STFT v2.3 Light Pro');
   }
+
+  // Exponent power for competitive Wiener Softmax separation
+  const EXPONENT = 1.8;
 
   // Main STFT Loop across time frames
   for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
@@ -173,11 +166,10 @@ export async function separateAudioBufferDSP(
       if (onProgress) {
         onProgress(
           currentProgress,
-          `Aislando instrumentos por espectro de frecuencia v2.2 (${Math.round((startSample / sampleRate))}s / ${Math.round(sourceBuffer.duration)}s)...`,
-          'Multi-Band Spectral Masking v2.2'
+          `Aislando instrumentos por espectro de frecuencia v2.3 (${Math.round((startSample / sampleRate))}s / ${Math.round(sourceBuffer.duration)}s)...`,
+          'Multi-Band Softmax Spectral Engine v2.3'
         );
       }
-      // Yield to UI thread so audio/progress bar updates smoothly
       await new Promise((r) => setTimeout(r, 0));
     }
 
@@ -196,7 +188,7 @@ export async function separateAudioBufferDSP(
     fft.transform(frameRealR, frameImagR, false);
 
     // 3. Spectral Mask Calculation per frequency bin
-    for (let bin = 0; bin <= FFT_SIZE / 2; bin++) {
+    for (let bin = 0; bin < numBins; bin++) {
       const freq = (bin * sampleRate) / FFT_SIZE;
 
       // Complex Left, Right, Mid, Side components
@@ -208,84 +200,93 @@ export async function separateAudioBufferDSP(
 
       const magM = Math.sqrt(rM * rM + iM * iM);
       const magS = Math.sqrt(rS * rS + iS * iS);
+      const totalMag = magM + magS + 1e-7;
 
-      // Mid-Side Center Dominance Ratio (1.0 = Pure mono center, 0.0 = Pure side)
-      const centerRatio = (magM + magS) > 1e-6 ? magM / (magM + magS) : 0.5;
+      // Spatial Center & Side Ratios
+      const centerRatio = magM / totalMag;
+      const sideRatio = magS / totalMag;
 
       // Transient Flux (Attack detection per bin)
       const flux = Math.max(0, magM - prevMagM[bin]);
       prevMagM[bin] = magM;
-      const fluxRatio = flux / (magM + 1e-4);
+      const fluxRatio = Math.min(1.0, flux / (magM + 1e-4));
 
-      // --- STEM SPECIFIC MASKS v2.1 --- //
+      // --- STEM LIKELIHOOD SCORES v2.3 --- //
 
-      // A) Vocals Mask (140Hz to 8500Hz, Formant peak 300Hz-3800Hz)
-      let wVocal = 0;
-      if (freq >= 140 && freq <= 8800) {
-        const freqWeight = freq < 300
-          ? (freq - 140) / 160
-          : freq > 3800
-          ? Math.max(0, 1.0 - (freq - 3800) / 5000)
-          : 1.0;
-
-        const centerBonus = isMonoFile ? 0.75 : Math.pow(centerRatio, 1.2);
-        const transientPenalty = Math.max(0, 1.0 - fluxRatio * 1.8);
-        wVocal = freqWeight * centerBonus * transientPenalty * 0.85;
+      // A) BASS: 30 Hz to 320 Hz
+      let sBass = 0;
+      if (freq >= 28 && freq <= 320) {
+        let lowpass = 1.0;
+        if (freq > 180) {
+          lowpass = (320 - freq) / 140;
+        }
+        sBass = lowpass * (0.6 + 0.4 * centerRatio) * (1.0 - 0.4 * fluxRatio);
       }
 
-      // B) Drums Mask (Sub-kick 35-140Hz, Snare/Toms 150-3800Hz, Cymbals >4000Hz)
-      let wDrum = 0;
-      if (freq >= 30 && freq <= 140) {
-        wDrum = Math.min(1.0, (fluxRatio * 3.0) + (magM > 0.015 ? 0.8 : 0.25));
-      } else if (freq > 140 && freq <= 3800) {
-        wDrum = Math.min(1.0, fluxRatio * 3.4);
-      } else if (freq > 3800 && freq <= 18000) {
-        wDrum = Math.min(1.0, (fluxRatio * 2.5) + (magS > magM ? 0.5 : 0.2));
+      // B) VOCALS: 110 Hz to 8500 Hz (Peak Formants 280-3600 Hz)
+      let sVocal = 0;
+      if (freq >= 110 && freq <= 8500) {
+        let vocalBand = 1.0;
+        if (freq < 280) {
+          vocalBand = (freq - 110) / 170;
+        } else if (freq > 3600) {
+          vocalBand = Math.max(0.05, 1.0 - (freq - 3600) / 4900);
+        }
+        sVocal = vocalBand * (0.45 + 0.55 * centerRatio) * (1.0 - 0.3 * fluxRatio);
       }
 
-      // C) Bass Mask (35Hz to 280Hz, Low-pass, low transient flux)
-      let wBass = 0;
-      if (freq >= 35 && freq <= 280) {
-        const lowpass = freq < 180 ? 1.0 : Math.max(0, 1.0 - (freq - 180) / 100);
-        const bassCenter = isMonoFile ? 0.85 : Math.pow(centerRatio, 1.5);
-        const nonTrans = Math.max(0, 1.0 - fluxRatio * 1.5);
-        wBass = lowpass * bassCenter * nonTrans * 0.9;
+      // C) DRUMS: All frequencies via transient flux + percussive bands
+      let sDrum = 0;
+      if (freq >= 28 && freq <= 130) {
+        // Sub-kick / low snare impact
+        sDrum = 0.2 + fluxRatio * 3.0;
+      } else if (freq > 130 && freq <= 4500) {
+        // Snare, rim, toms
+        sDrum = 0.1 + fluxRatio * 3.5;
+      } else if (freq > 4500) {
+        // Cymbals, hi-hats, shakers
+        sDrum = 0.12 + fluxRatio * 2.8 + sideRatio * 0.4;
       }
 
-      // D) Guitars Mask (160Hz to 7200Hz, String attacks & body resonance)
-      let wGuitar = 0;
-      if (freq >= 160 && freq <= 7200) {
-        const freqWeight = freq < 260 ? (freq - 160) / 100 : 1.0;
-        const sideBoost = isMonoFile ? 0.45 : Math.pow(magS / (magM + magS + 1e-6), 0.7) * 0.7 + 0.3;
-        const guitarAttack = (fluxRatio > 0.08 && fluxRatio < 0.4) ? 1.2 : 0.8;
-        wGuitar = freqWeight * sideBoost * guitarAttack * 0.65;
+      // D) GUITARS: 140 Hz to 7500 Hz (Body resonance & wide stereo pan)
+      let sGuitar = 0;
+      if (freq >= 140 && freq <= 7500) {
+        let gtrBand = 1.0;
+        if (freq < 220) gtrBand = (freq - 140) / 80;
+        else if (freq > 4500) gtrBand = Math.max(0.1, 1.0 - (freq - 4500) / 3000);
+
+        sGuitar = gtrBand * (0.35 + 0.65 * sideRatio) * (0.7 + 0.5 * fluxRatio);
       }
 
-      // E) Piano / Keyboards Mask (130Hz to 6000Hz, Harmonic sustained notes)
-      let wPiano = 0;
-      if (freq >= 130 && freq <= 6000) {
-        const nonTrans = Math.max(0, 1.0 - fluxRatio * 2.0);
-        const pianoCenter = isMonoFile ? 0.6 : Math.pow(centerRatio, 0.5);
-        wPiano = nonTrans * pianoCenter * 0.6;
+      // E) PIANO & KEYBOARDS: 100 Hz to 6500 Hz (Sustained harmonic notes)
+      let sPiano = 0;
+      if (freq >= 100 && freq <= 6500) {
+        let pianoBand = 1.0;
+        if (freq < 180) pianoBand = (freq - 100) / 80;
+        else if (freq > 4000) pianoBand = Math.max(0.1, 1.0 - (freq - 4000) / 2500);
+
+        sPiano = pianoBand * (0.5 + 0.5 * centerRatio) * (1.0 - 0.4 * fluxRatio);
       }
 
-      // Wiener Mask Normalization v2.1
-      const maskSum = wVocal + wDrum + wBass + wGuitar + wPiano + 1e-6;
-      if (maskSum > 1.0) {
-        wVocal /= maskSum;
-        wDrum /= maskSum;
-        wBass /= maskSum;
-        wGuitar /= maskSum;
-        wPiano /= maskSum;
-      }
-      const wOther = Math.max(0, 1.0 - (wVocal + wDrum + wBass + wGuitar + wPiano));
+      // F) OTHER / RESIDUAL: Baseline energy floor
+      const sOther = 0.12;
 
-      maskVocal[bin] = wVocal;
-      maskDrum[bin] = wDrum;
-      maskBass[bin] = wBass;
-      maskGuitar[bin] = wGuitar;
-      maskPiano[bin] = wPiano;
-      maskOther[bin] = wOther;
+      // Softmax Exponent Power Transformation
+      const pVocal = selectedStems.includes('vocals_all') ? Math.pow(Math.max(0, sVocal), EXPONENT) : 0;
+      const pDrum = selectedStems.includes('drums_all') ? Math.pow(Math.max(0, sDrum), EXPONENT) : 0;
+      const pBass = selectedStems.includes('bass') ? Math.pow(Math.max(0, sBass), EXPONENT) : 0;
+      const pGuitar = selectedStems.includes('guitar_all') ? Math.pow(Math.max(0, sGuitar), EXPONENT) : 0;
+      const pPiano = selectedStems.includes('piano_keys') ? Math.pow(Math.max(0, sPiano), EXPONENT) : 0;
+      const pOther = selectedStems.includes('other') ? Math.pow(Math.max(0, sOther), EXPONENT) : 0;
+
+      const totalPower = pVocal + pDrum + pBass + pGuitar + pPiano + pOther + 1e-8;
+
+      maskVocal[bin] = pVocal / totalPower;
+      maskDrum[bin] = pDrum / totalPower;
+      maskBass[bin] = pBass / totalPower;
+      maskGuitar[bin] = pGuitar / totalPower;
+      maskPiano[bin] = pPiano / totalPower;
+      maskOther[bin] = pOther / totalPower;
     }
 
     // 4. Synthesize Each Selected Stem via Inverse FFT (IFFT) + Overlap Add (OLA)
@@ -310,7 +311,7 @@ export async function separateAudioBufferDSP(
   }
 
   if (onProgress) {
-    onProgress(92, 'Normalizando ganancia y estructurando pistas v2.2...', 'Engine STFT v2.2 Azul Pro');
+    onProgress(92, 'Normalizando ganancia y estructurando pistas v2.3...', 'Engine STFT v2.3 Light Pro');
   }
   await new Promise((r) => setTimeout(r, 40));
 
@@ -324,7 +325,7 @@ export async function separateAudioBufferDSP(
       id: `vocal-${Date.now()}`,
       name: 'Voces Principal & Coros',
       category: 'vocals_all',
-      color: '#38BDF8',
+      color: '#0284C7',
       buffer: buf,
       volume: 1.0,
       sensitivity: 1.0,
@@ -343,7 +344,7 @@ export async function separateAudioBufferDSP(
       id: `drum-${Date.now()}`,
       name: 'Batería Completa (Kick, Snare, Hats)',
       category: 'drums_all',
-      color: '#F43F5E',
+      color: '#E11D48',
       buffer: buf,
       volume: 1.0,
       sensitivity: 1.0,
@@ -362,7 +363,7 @@ export async function separateAudioBufferDSP(
       id: `bass-${Date.now()}`,
       name: 'Bajo Eléctrico',
       category: 'bass',
-      color: '#10B981',
+      color: '#059669',
       buffer: buf,
       volume: 1.0,
       sensitivity: 1.0,
@@ -381,7 +382,7 @@ export async function separateAudioBufferDSP(
       id: `guitar-${Date.now()}`,
       name: 'Guitarra Acústica / Eléctrica',
       category: 'guitar_all',
-      color: '#F59E0B',
+      color: '#D97706',
       buffer: buf,
       volume: 1.0,
       sensitivity: 1.0,
@@ -400,7 +401,7 @@ export async function separateAudioBufferDSP(
       id: `piano-${Date.now()}`,
       name: 'Piano & Teclados',
       category: 'piano_keys',
-      color: '#A855F7',
+      color: '#9333EA',
       buffer: buf,
       volume: 1.0,
       sensitivity: 1.0,
@@ -414,12 +415,12 @@ export async function separateAudioBufferDSP(
   // 6. Other
   if (selectedStems.includes('other')) {
     const buf = audioCtx.createBuffer(2, length, sampleRate);
-    normalizeAndCopyBuffer(buf, otherL, otherR, 1.2);
+    normalizeAndCopyBuffer(buf, otherL, otherR, 1.25);
     stemResults.push({
       id: `other-${Date.now()}`,
       name: 'Other (Resto de la Mezcla)',
       category: 'other',
-      color: '#EC4899',
+      color: '#DB2777',
       buffer: buf,
       volume: 1.0,
       sensitivity: 1.0,
@@ -431,7 +432,7 @@ export async function separateAudioBufferDSP(
   }
 
   if (onProgress) {
-    onProgress(100, 'Separación de instrumentos v2.2 completada con alta sensibilidad.', 'Finalizado');
+    onProgress(100, 'Separación de instrumentos v2.3 completada con alta fidelidad.', 'Finalizado');
   }
 
   return stemResults;
@@ -485,7 +486,7 @@ function synthesizeFrameStem(
 }
 
 /**
- * Normalize & copy buffer to prevent clipping while maintaining high loudness & sensitivity
+ * Normalize & copy buffer to prevent clipping while maintaining high loudness & clear separation
  */
 function normalizeAndCopyBuffer(
   targetBuffer: AudioBuffer,

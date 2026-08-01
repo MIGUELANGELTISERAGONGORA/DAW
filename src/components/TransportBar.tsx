@@ -68,17 +68,17 @@ export const TransportBar: React.FC<TransportBarProps> = ({
   };
 
   return (
-    <div className="bg-[#0b1428] border border-blue-900/60 rounded-xl p-3 shadow-xl space-y-2">
+    <div className="bg-white border border-slate-200/90 rounded-xl p-3 shadow-sm space-y-2">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
         {/* Main Controls: Play, Pause, Stop */}
         <div className="flex items-center space-x-3">
           <button
             onClick={isPlaying ? onPause : onPlay}
             disabled={duration === 0}
-            className={`w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-md ${
+            className={`w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-md cursor-pointer ${
               isPlaying
-                ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 font-black'
-                : 'bg-sky-500 hover:bg-sky-400 text-slate-950 font-black shadow-sky-500/30'
+                ? 'bg-amber-500 hover:bg-amber-600 text-white font-bold'
+                : 'bg-sky-600 hover:bg-sky-700 text-white font-bold shadow-sky-600/20'
             } disabled:opacity-40 disabled:cursor-not-allowed`}
             title={isPlaying ? 'Pausa (Espacio)' : 'Reproducir (Espacio)'}
           >
@@ -88,19 +88,19 @@ export const TransportBar: React.FC<TransportBarProps> = ({
           <button
             onClick={onStop}
             disabled={duration === 0}
-            className="w-9 h-9 rounded-lg bg-blue-950/80 hover:bg-blue-900 text-sky-200 border border-blue-800/60 flex items-center justify-center transition-colors disabled:opacity-40"
+            className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition-colors disabled:opacity-40 cursor-pointer"
             title="Detener y Volver al Inicio"
           >
-            <Square className="w-4 h-4 fill-current text-sky-300" />
+            <Square className="w-4 h-4 fill-current text-slate-700" />
           </button>
 
-          <div className="h-6 w-px bg-blue-900/60" />
+          <div className="h-6 w-px bg-slate-200" />
 
           {/* Digital Time Counter */}
-          <div className="font-mono bg-[#050a16] border border-blue-900/60 px-3 py-1 rounded text-xs tracking-wider">
-            <span className="text-sky-300 font-bold">{formatTime(currentTime)}</span>
-            <span className="text-sky-600 mx-1.5">/</span>
-            <span className="text-sky-400/60">{formatTime(duration)}</span>
+          <div className="font-mono bg-slate-50 border border-slate-200 px-3 py-1 rounded text-xs tracking-wider">
+            <span className="text-sky-800 font-bold">{formatTime(currentTime)}</span>
+            <span className="text-slate-400 mx-1.5">/</span>
+            <span className="text-slate-500 font-medium">{formatTime(duration)}</span>
           </div>
         </div>
 
@@ -115,7 +115,7 @@ export const TransportBar: React.FC<TransportBarProps> = ({
               value={progressPct || 0}
               onChange={handleScrubChange}
               disabled={duration === 0}
-              className="w-full h-2 bg-[#050a16] rounded-lg appearance-none cursor-pointer accent-sky-400 disabled:cursor-not-allowed"
+              className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-600 disabled:cursor-not-allowed border border-slate-200"
             />
           </div>
           <div className="flex justify-between text-[10px] text-sky-400/50 font-mono">

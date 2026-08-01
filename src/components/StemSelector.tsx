@@ -29,10 +29,10 @@ export const StemSelector: React.FC<StemSelectorProps> = ({
   const groups = ['Voces', 'Batería', 'Instrumentos', 'Otros'] as const;
 
   return (
-    <div className="bg-[#0b1428] border border-blue-900/60 rounded-xl p-4 shadow-xl space-y-4">
+    <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-sm space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-sky-300 flex items-center space-x-2">
-          <CheckSquare className="w-4 h-4 text-sky-400" />
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-700 flex items-center space-x-2">
+          <CheckSquare className="w-4 h-4 text-sky-600" />
           <span>2. Selección de Pistas a Extraer</span>
         </h2>
 
@@ -40,13 +40,13 @@ export const StemSelector: React.FC<StemSelectorProps> = ({
         <div className="flex items-center space-x-2 text-xs">
           <button
             onClick={onSelectAll}
-            className="px-2.5 py-1 rounded bg-blue-950/80 hover:bg-blue-900 text-sky-200 transition-colors border border-blue-800/60"
+            className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors border border-slate-200 font-semibold cursor-pointer"
           >
             Todas
           </button>
           <button
             onClick={onSelectNone}
-            className="px-2.5 py-1 rounded bg-blue-950/80 hover:bg-blue-900 text-sky-200 transition-colors border border-blue-800/60"
+            className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors border border-slate-200 font-semibold cursor-pointer"
           >
             Ninguna
           </button>
@@ -58,8 +58,8 @@ export const StemSelector: React.FC<StemSelectorProps> = ({
         {groups.map((group) => {
           const groupItems = STEM_CATEGORIES.filter((c) => c.group === group);
           return (
-            <div key={group} className="bg-slate-950/60 border border-slate-800/80 rounded-lg p-3 space-y-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400 block border-b border-slate-800/60 pb-1">
+            <div key={group} className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-sky-700 block border-b border-slate-200 pb-1">
                 {group}
               </span>
 
@@ -73,32 +73,32 @@ export const StemSelector: React.FC<StemSelectorProps> = ({
                       onClick={() => stem.isAvailable && onToggleStem(stem.id)}
                       className={`flex items-start space-x-2.5 p-2 rounded-lg border transition-all cursor-pointer ${
                         !stem.isAvailable
-                          ? 'opacity-40 bg-slate-900 border-slate-800 cursor-not-allowed'
+                          ? 'opacity-40 bg-slate-100 border-slate-200 cursor-not-allowed'
                           : isChecked
-                          ? 'bg-indigo-500/10 border-indigo-500/40 text-slate-100'
-                          : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                          ? 'bg-sky-50 border-sky-400 text-slate-900 shadow-sm'
+                          : 'bg-white border-slate-200 text-slate-600 hover:border-sky-300 hover:bg-slate-50'
                       }`}
                     >
                       <div className="mt-0.5 shrink-0">
                         {isChecked ? (
-                          <CheckSquare className="w-4 h-4 text-indigo-400" />
+                          <CheckSquare className="w-4 h-4 text-sky-600" />
                         ) : (
-                          <Square className="w-4 h-4 text-slate-600" />
+                          <Square className="w-4 h-4 text-slate-400" />
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
+                            className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
                             style={{ backgroundColor: stem.color }}
                           />
-                          <span className="text-xs font-medium truncate">{stem.name}</span>
+                          <span className="text-xs font-semibold truncate">{stem.name}</span>
                         </div>
                         <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">{stem.description}</p>
 
                         {!stem.isAvailable && (
-                          <p className="text-[10px] text-amber-400/90 flex items-center space-x-1 mt-1">
+                          <p className="text-[10px] text-amber-600 flex items-center space-x-1 mt-1 font-medium">
                             <AlertCircle className="w-3 h-3 shrink-0" />
                             <span>{stem.unavailableReason}</span>
                           </p>
@@ -114,31 +114,31 @@ export const StemSelector: React.FC<StemSelectorProps> = ({
       </div>
 
       {/* Complementary Other Logic Explanation Note */}
-      <div className="bg-pink-500/10 border border-pink-500/20 rounded-lg p-3 text-[11px] text-pink-300 space-y-1">
-        <div className="flex items-center space-x-1.5 font-semibold">
-          <Info className="w-3.5 h-3.5 text-pink-400" />
+      <div className="bg-pink-50 border border-pink-200 rounded-lg p-3 text-[11px] text-pink-900 space-y-1">
+        <div className="flex items-center space-x-1.5 font-bold">
+          <Info className="w-3.5 h-3.5 text-pink-600" />
           <span>Lógica de Complemento Residencial "Other"</span>
         </div>
-        <p className="text-pink-200/80">
-          La pista <strong className="text-pink-300">Other</strong> contiene la diferencia matemática exacta de la mezcla
+        <p className="text-pink-800">
+          La pista <strong className="text-pink-950 font-bold">Other</strong> contiene la diferencia matemática exacta de la mezcla
           menos todas las pistas seleccionadas. La suma de las pistas principales + Other reconstruye el audio original sin cancelación de fase ni archivos vacíos falsos.
         </p>
       </div>
 
       {/* Output Folder Picker */}
-      <div className="bg-[#050a16] border border-blue-900/60 rounded-lg p-3 space-y-2">
-        <label className="text-[11px] font-semibold text-sky-300 uppercase tracking-wider block">
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
           3. Carpeta de Trabajo y Exportación
         </label>
         <div className="flex items-center space-x-2">
-          <div className="flex-1 bg-[#091124] border border-blue-900/60 rounded px-3 py-1.5 font-mono text-xs text-sky-200 truncate">
+          <div className="flex-1 bg-white border border-slate-200 rounded px-3 py-1.5 font-mono text-xs text-slate-800 truncate shadow-xs">
             {outputDirectory}
           </div>
           <button
             onClick={onSelectOutputDirectory}
-            className="flex items-center space-x-1 px-3 py-1.5 rounded bg-blue-950/80 hover:bg-blue-900 text-xs text-sky-200 border border-blue-800/60 transition-colors shrink-0"
+            className="flex items-center space-x-1 px-3 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-xs text-slate-700 border border-slate-200 transition-colors shrink-0 font-semibold cursor-pointer"
           >
-            <Folder className="w-3.5 h-3.5 text-amber-400" />
+            <Folder className="w-3.5 h-3.5 text-amber-500" />
             <span>Elegir...</span>
           </button>
         </div>
@@ -148,12 +148,12 @@ export const StemSelector: React.FC<StemSelectorProps> = ({
       <button
         onClick={onStartSeparation}
         disabled={isProcessing || !hasAudioFile || selectedStems.length === 0}
-        className={`w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center space-x-2 shadow-lg transition-all ${
+        className={`w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center space-x-2 shadow-md transition-all cursor-pointer ${
           isProcessing
-            ? 'bg-sky-700/50 text-sky-200 cursor-wait'
+            ? 'bg-sky-400 text-white cursor-wait'
             : !hasAudioFile || selectedStems.length === 0
-            ? 'bg-blue-950/50 text-sky-400/40 cursor-not-allowed border border-blue-900/40'
-            : 'bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 hover:from-blue-500 hover:to-sky-400 text-slate-950 font-black shadow-sky-500/20 hover:scale-[1.01]'
+            ? 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+            : 'bg-sky-600 hover:bg-sky-700 text-white font-bold shadow-sky-600/20 hover:scale-[1.005]'
         }`}
       >
         <Sparkles className="w-4 h-4 text-amber-300" />

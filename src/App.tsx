@@ -283,7 +283,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050b18] text-sky-100 flex flex-col font-sans selection:bg-sky-500 selection:text-black">
+    <div className="min-h-screen bg-slate-100 text-slate-800 flex flex-col font-sans selection:bg-sky-200 selection:text-sky-900">
       {/* Top macOS Title Bar */}
       <MacTitleBar
         activeTab={activeTab}
@@ -393,14 +393,14 @@ export default function App() {
       </main>
 
       {/* Footer Branding & Author Credit */}
-      <footer className="border-t border-blue-900/40 bg-[#040814] px-4 py-2 text-center text-xs text-sky-300/60 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <footer className="border-t border-slate-200 bg-white px-4 py-3 text-center text-xs text-slate-600 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm">
         <div className="flex items-center space-x-2">
-          <span className="font-bold text-sky-200">MAT DAW Split Pro v2.2</span>
+          <span className="font-bold text-sky-700">MAT DAW Split Pro v2.3</span>
           <span>•</span>
           <span>Separador Multicanal de Audio & DAW Espectral</span>
         </div>
-        <div className="font-semibold text-sky-300/90">
-          Desarrollado por <span className="text-sky-200 font-bold">Miguel Ángel Tisera</span>
+        <div className="font-semibold text-slate-700">
+          Desarrollado por <span className="text-sky-800 font-bold">Miguel Ángel Tisera</span>
         </div>
       </footer>
 
