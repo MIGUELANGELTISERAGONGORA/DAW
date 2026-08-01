@@ -16,9 +16,39 @@ export class AudioEngine {
 
   private onTimeUpdateCallback?: (currentTime: number) => void;
   private animFrameId: number | null = null;
+  private pitchShiftSemitones: number = 0; // -12 to +12
+  private playbackSpeedRate: number = 1.0;  // 0.5 to 1.5
 
   constructor() {
     // AudioContext will be initialized on user gesture or play
+  }
+
+  public setPitchShift(semitones: number) {
+    this.pitchShiftSemitones = semitones;
+    const rate = Math.pow(2, semitones / 12) * this.playbackSpeedRate;
+    for (const [, entry] of this.trackNodes) {
+      if (entry.sourceNode) {
+        entry.sourceNode.playbackRate.value = rate;
+      }
+    }
+  }
+
+  public setSpeed(speed: number) {
+    this.playbackSpeedRate = speed;
+    const rate = Math.pow(2, this.pitchShiftSemitones / 12) * speed;
+    for (const [, entry] of this.trackNodes) {
+      if (entry.sourceNode) {
+        entry.sourceNode.playbackRate.value = rate;
+      }
+    }
+  }
+
+  public getPitchShift(): number {
+    return this.pitchShiftSemitones;
+  }
+
+  public getSpeed(): number {
+    return this.playbackSpeedRate;
   }
 
   public getAudioContext(): AudioContext {
@@ -169,6 +199,10 @@ export class AudioEngine {
       if (entry.pannerNode && track.pan !== undefined) {
         entry.pannerNode.pan.setValueAtTime(Math.max(-1, Math.min(1, track.pan)), ctx.currentTime);
       }
+
+      // Apply Pitch Shift & Speed Stretch
+      const playbackRate = Math.pow(2, this.pitchShiftSemitones / 12) * this.playbackSpeedRate;
+      sourceNode.playbackRate.setValueAtTime(playbackRate, ctx.currentTime);
 
       // Start buffer source from current offset
       sourceNode.start(ctx.currentTime, this.pauseOffset);

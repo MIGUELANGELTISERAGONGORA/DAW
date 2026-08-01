@@ -3,7 +3,7 @@ import { AppTab, AudioFileInfo, AudioTrackState, StemCategory, ProcessingProgres
 import { STEM_CATEGORIES } from './data/categories';
 import { createDemoTracks, computeResidualOtherBuffer } from './data/demoAudio';
 import { AudioEngine } from './lib/audioEngine';
-import { detectPitchesFromBuffer } from './lib/pitchDetection';
+import { detectPitchesFromBuffer, detectKeyAndBpm } from './lib/pitchDetection';
 import { separateAudioBufferDSP } from './lib/dspStemSeparator';
 
 import { MacTitleBar } from './components/MacTitleBar';
@@ -41,6 +41,13 @@ export default function App() {
   const [duration, setDuration] = useState<number>(0);
   const [masterVolume, setMasterVolume] = useState<number>(1.0);
 
+  // DAW Pitch, Speed, Key & Tempo State
+  const [pitchShift, setPitchShift] = useState<number>(0);
+  const [speed, setSpeed] = useState<number>(1.0);
+  const [keySignature, setKeySignature] = useState<string>('Am (La Menor)');
+  const [bpm, setBpm] = useState<number>(124);
+  const [isRecordingMic, setIsRecordingMic] = useState<boolean>(false);
+
   // Sheet Music Modal State
   const [sheetMusicTrack, setSheetMusicTrack] = useState<AudioTrackState | null>(null);
 
@@ -51,7 +58,7 @@ export default function App() {
 
   // Master System Logs
   const [systemLogs, setSystemLogs] = useState<string[]>([
-    '[INIT] MAT DAW Split Pro Engine v1.0.0 iniciado.',
+    '[INIT] MAT DAW Split Pro Engine v2.33 iniciado.',
     '[INIT] Entorno OS X El Capitan 10.11.6 (x86_64) verificado.',
     '[INIT] Módulo ML de Transcripción de Audio a Partitura MusicXML cargado.',
     '[INIT] Runtime Python 3.9 relocalizable detectado en bundle /Applications/Limbus Split Pro.app',
@@ -60,6 +67,69 @@ export default function App() {
 
   const addLog = (msg: string) => {
     setSystemLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+  };
+
+  const handlePitchShiftChange = (semitones: number) => {
+    setPitchShift(semitones);
+    audioEngineRef.current.setPitchShift(semitones);
+  };
+
+  const handleSpeedChange = (newSpeed: number) => {
+    setSpeed(newSpeed);
+    audioEngineRef.current.setSpeed(newSpeed);
+  };
+
+  const handleRecordMicrophone = async () => {
+    if (isRecordingMic) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const audioChunks: Blob[] = [];
+
+      setIsRecordingMic(true);
+      addLog('Grabación de micrófono iniciada (5 segundos)...');
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        const arrayBuf = await audioBlob.arrayBuffer();
+        const ctx = audioEngineRef.current.getAudioContext();
+        const decodedBuf = await ctx.decodeAudioData(arrayBuf);
+
+        const newMicTrack: AudioTrackState = {
+          id: `mic_${Date.now()}`,
+          name: 'Grabación Vocal / Mic',
+          category: 'vocal_lead',
+          color: '#f43f5e',
+          buffer: decodedBuf,
+          volume: 1.0,
+          pan: 0,
+          sensitivity: 1.0,
+          isMuted: false,
+          isSolo: false,
+          peakLevel: 0,
+        };
+
+        setTracks((prev) => [...prev, newMicTrack]);
+        addLog('Grabación de voz finalizada e integrada al mezclador multipista.');
+        setIsRecordingMic(false);
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      mediaRecorder.start();
+      setTimeout(() => {
+        if (mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+        }
+      }, 5000);
+    } catch (err: any) {
+      console.error('Microphone error:', err);
+      addLog(`[ERROR] Permiso de micrófono denegado o no disponible: ${err?.message}`);
+      setIsRecordingMic(false);
+    }
   };
 
   // Sync audio engine progress callback
@@ -85,6 +155,11 @@ export default function App() {
       const ctx = audioEngineRef.current.getAudioContext();
       const decodedBuf = await ctx.decodeAudioData(arrayBuf);
 
+      // Detect Key & BPM
+      const analysis = detectKeyAndBpm(decodedBuf);
+      setKeySignature(analysis.key);
+      setBpm(analysis.bpm);
+
       setCurrentFile({
         name: file.name,
         size: file.size,
@@ -95,7 +170,7 @@ export default function App() {
         audioBuffer: decodedBuf,
       });
 
-      addLog(`Audio decodificado: ${decodedBuf.duration.toFixed(2)}s, ${decodedBuf.sampleRate}Hz, ${decodedBuf.numberOfChannels} ch.`);
+      addLog(`Audio decodificado: ${decodedBuf.duration.toFixed(2)}s, Tonalidad: ${analysis.key}, Tempo: ${analysis.bpm} BPM`);
     } catch (err: any) {
       console.error('Failed to decode audio file:', err);
       addLog(`[ERROR] Error al decodificar audio: ${err?.message || 'Formato no soportado'}`);
@@ -110,6 +185,10 @@ export default function App() {
       const ctx = audioEngineRef.current.getAudioContext();
       const demo = await createDemoTracks(ctx);
 
+      const analysis = detectKeyAndBpm(demo.tracks[0].buffer);
+      setKeySignature(analysis.key);
+      setBpm(analysis.bpm);
+
       setCurrentFile({
         name: demo.originalFile.name,
         size: 5242880,
@@ -121,7 +200,7 @@ export default function App() {
       });
 
       setTracks(demo.tracks);
-      addLog('Pista de prueba sintetizada y cargada en el mezclador multipista.');
+      addLog(`Pista de prueba cargada. Tonalidad: ${analysis.key}, Tempo: ${analysis.bpm} BPM.`);
     } catch (err: any) {
       console.error('Demo load error:', err);
       addLog(`[ERROR] Error sintetizando demo: ${err?.message}`);
@@ -333,6 +412,14 @@ export default function App() {
                   onSeek={handleSeek}
                   masterVolume={masterVolume}
                   onMasterVolumeChange={setMasterVolume}
+                  pitchShift={pitchShift}
+                  onPitchShiftChange={handlePitchShiftChange}
+                  speed={speed}
+                  onSpeedChange={handleSpeedChange}
+                  keySignature={keySignature}
+                  bpm={bpm}
+                  isRecordingMic={isRecordingMic}
+                  onRecordMic={handleRecordMicrophone}
                 />
 
                 <MultiTrackMixer
@@ -395,7 +482,7 @@ export default function App() {
       {/* Footer Branding & Author Credit */}
       <footer className="border-t border-blue-900/40 bg-[#040814] px-4 py-2.5 text-center text-xs text-sky-300/60 flex flex-col sm:flex-row items-center justify-between gap-2">
         <div className="flex items-center space-x-2">
-          <span className="font-bold text-sky-200">MAT DAW Split Pro v2.31</span>
+          <span className="font-bold text-sky-200">MAT DAW Split Pro v2.33</span>
           <span>•</span>
           <span>Separador Multicanal de Audio & DAW Espectral</span>
         </div>

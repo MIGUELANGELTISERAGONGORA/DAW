@@ -55,7 +55,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
             <div className="flex justify-between text-[10px] text-sky-400/70 font-mono font-medium">
               <span>Modelo: {progress.currentModel}</span>
-              <span>Motor Softmax DSP v2.31 Local</span>
+              <span>Motor Softmax DSP v2.33 Local</span>
             </div>
           </div>
 
