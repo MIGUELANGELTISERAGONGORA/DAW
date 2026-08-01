@@ -5,6 +5,7 @@ export class AudioEngine {
   private trackNodes: Map<string, {
     sourceNode: AudioBufferSourceNode | null;
     gainNode: GainNode;
+    pannerNode: StereoPannerNode | null;
     analyserNode: AnalyserNode;
   }> = new Map();
 
@@ -81,17 +82,36 @@ export class AudioEngine {
 
       if (!entry) {
         const gainNode = ctx.createGain();
+        let pannerNode: StereoPannerNode | null = null;
+
+        if (ctx.createStereoPanner) {
+          pannerNode = ctx.createStereoPanner();
+          gainNode.connect(pannerNode);
+        }
+
         const analyserNode = ctx.createAnalyser();
         analyserNode.fftSize = 64;
-        gainNode.connect(analyserNode);
+
+        if (pannerNode) {
+          pannerNode.connect(analyserNode);
+        } else {
+          gainNode.connect(analyserNode);
+        }
+
         analyserNode.connect(ctx.destination);
 
-        entry = { sourceNode: null, gainNode, analyserNode };
+        entry = { sourceNode: null, gainNode, pannerNode, analyserNode };
         this.trackNodes.set(track.id, entry);
       }
 
-      // Calculate effective gain considering Mute & Solo logic
-      let effectiveGain = track.volume;
+      // Update Panning
+      if (entry.pannerNode && track.pan !== undefined) {
+        entry.pannerNode.pan.setTargetAtTime(Math.max(-1, Math.min(1, track.pan)), ctx.currentTime, 0.015);
+      }
+
+      // Calculate effective gain considering Volume, Sensitivity, Mute & Solo logic
+      const sensitivityBoost = track.sensitivity || 1.0;
+      let effectiveGain = track.volume * sensitivityBoost;
 
       if (track.isMuted) {
         effectiveGain = 0;
@@ -134,7 +154,9 @@ export class AudioEngine {
       sourceNode.buffer = track.buffer;
       sourceNode.connect(entry.gainNode);
 
-      let effectiveGain = track.volume;
+      const sensitivityBoost = track.sensitivity || 1.0;
+      let effectiveGain = track.volume * sensitivityBoost;
+
       if (track.isMuted) {
         effectiveGain = 0;
       } else if (hasSolo && !track.isSolo) {
@@ -143,6 +165,10 @@ export class AudioEngine {
 
       entry.gainNode.gain.setValueAtTime(0, ctx.currentTime);
       entry.gainNode.gain.linearRampToValueAtTime(effectiveGain, ctx.currentTime + 0.015);
+
+      if (entry.pannerNode && track.pan !== undefined) {
+        entry.pannerNode.pan.setValueAtTime(Math.max(-1, Math.min(1, track.pan)), ctx.currentTime);
+      }
 
       // Start buffer source from current offset
       sourceNode.start(ctx.currentTime, this.pauseOffset);

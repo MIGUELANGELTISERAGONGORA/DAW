@@ -250,6 +250,18 @@ export default function App() {
     );
   };
 
+  const handlePanChange = (trackId: string, pan: number) => {
+    setTracks((prev) =>
+      prev.map((t) => (t.id === trackId ? { ...t, pan } : t))
+    );
+  };
+
+  const handleSensitivityChange = (trackId: string, sensitivity: number) => {
+    setTracks((prev) =>
+      prev.map((t) => (t.id === trackId ? { ...t, sensitivity } : t))
+    );
+  };
+
   // Master Mixdown Export Handler
   const handleExportMixdown = async () => {
     setIsExportingMix(true);
@@ -271,7 +283,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-zinc-100 flex flex-col font-sans selection:bg-[#F27D26] selection:text-black">
+    <div className="min-h-screen bg-[#050b18] text-sky-100 flex flex-col font-sans selection:bg-sky-500 selection:text-black">
       {/* Top macOS Title Bar */}
       <MacTitleBar
         activeTab={activeTab}
@@ -328,6 +340,8 @@ export default function App() {
                   onToggleMute={handleToggleMute}
                   onToggleSolo={handleToggleSolo}
                   onVolumeChange={handleVolumeChange}
+                  onPanChange={handlePanChange}
+                  onSensitivityChange={handleSensitivityChange}
                   onOpenSheetMusic={(track) => setSheetMusicTrack(track)}
                   onExportMixdown={handleExportMixdown}
                   onOpenOutputFolder={handleSelectOutputDirectory}

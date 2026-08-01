@@ -68,7 +68,7 @@ export const TransportBar: React.FC<TransportBarProps> = ({
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-xl space-y-2">
+    <div className="bg-[#0b1428] border border-blue-900/60 rounded-xl p-3 shadow-xl space-y-2">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
         {/* Main Controls: Play, Pause, Stop */}
         <div className="flex items-center space-x-3">
@@ -77,8 +77,8 @@ export const TransportBar: React.FC<TransportBarProps> = ({
             disabled={duration === 0}
             className={`w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-md ${
               isPlaying
-                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
-                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
+                ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 font-black'
+                : 'bg-sky-500 hover:bg-sky-400 text-slate-950 font-black shadow-sky-500/30'
             } disabled:opacity-40 disabled:cursor-not-allowed`}
             title={isPlaying ? 'Pausa (Espacio)' : 'Reproducir (Espacio)'}
           >
@@ -88,19 +88,19 @@ export const TransportBar: React.FC<TransportBarProps> = ({
           <button
             onClick={onStop}
             disabled={duration === 0}
-            className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors disabled:opacity-40"
+            className="w-9 h-9 rounded-lg bg-blue-950/80 hover:bg-blue-900 text-sky-200 border border-blue-800/60 flex items-center justify-center transition-colors disabled:opacity-40"
             title="Detener y Volver al Inicio"
           >
-            <Square className="w-4 h-4 fill-current text-slate-400" />
+            <Square className="w-4 h-4 fill-current text-sky-300" />
           </button>
 
-          <div className="h-6 w-px bg-slate-800" />
+          <div className="h-6 w-px bg-blue-900/60" />
 
           {/* Digital Time Counter */}
-          <div className="font-mono bg-slate-950 border border-slate-800 px-3 py-1 rounded text-xs tracking-wider">
-            <span className="text-emerald-400 font-bold">{formatTime(currentTime)}</span>
-            <span className="text-slate-600 mx-1.5">/</span>
-            <span className="text-slate-400">{formatTime(duration)}</span>
+          <div className="font-mono bg-[#050a16] border border-blue-900/60 px-3 py-1 rounded text-xs tracking-wider">
+            <span className="text-sky-300 font-bold">{formatTime(currentTime)}</span>
+            <span className="text-sky-600 mx-1.5">/</span>
+            <span className="text-sky-400/60">{formatTime(duration)}</span>
           </div>
         </div>
 
@@ -115,10 +115,10 @@ export const TransportBar: React.FC<TransportBarProps> = ({
               value={progressPct || 0}
               onChange={handleScrubChange}
               disabled={duration === 0}
-              className="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-indigo-500 disabled:cursor-not-allowed"
+              className="w-full h-2 bg-[#050a16] rounded-lg appearance-none cursor-pointer accent-sky-400 disabled:cursor-not-allowed"
             />
           </div>
-          <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+          <div className="flex justify-between text-[10px] text-sky-400/50 font-mono">
             <span>00:00</span>
             <span>Atajo: [Espacio] Play/Pausa</span>
             <span>{formatTime(duration)}</span>
@@ -129,9 +129,9 @@ export const TransportBar: React.FC<TransportBarProps> = ({
         <div className="flex items-center space-x-2 shrink-0">
           <button
             onClick={() => onMasterVolumeChange(masterVolume === 0 ? 1 : 0)}
-            className="text-slate-400 hover:text-slate-200 transition-colors"
+            className="text-sky-300 hover:text-white transition-colors"
           >
-            {masterVolume === 0 ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-slate-300" />}
+            {masterVolume === 0 ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-sky-300" />}
           </button>
           <input
             type="range"
@@ -140,9 +140,9 @@ export const TransportBar: React.FC<TransportBarProps> = ({
             step="0.05"
             value={masterVolume}
             onChange={(e) => onMasterVolumeChange(parseFloat(e.target.value))}
-            className="w-20 h-1.5 bg-slate-950 rounded appearance-none cursor-pointer accent-indigo-500"
+            className="w-20 h-1.5 bg-[#050a16] rounded appearance-none cursor-pointer accent-sky-400"
           />
-          <span className="font-mono text-[11px] text-slate-400 w-8">
+          <span className="font-mono text-[11px] text-sky-300 w-8">
             {Math.round(masterVolume * 100)}%
           </span>
         </div>

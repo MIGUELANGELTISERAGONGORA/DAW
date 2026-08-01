@@ -18,7 +18,7 @@ export const MacTitleBar: React.FC<MacTitleBarProps> = ({
   outputDirectory,
 }) => {
   return (
-    <header className="bg-[#161616]/95 backdrop-blur-md border-b border-[#2a2a2a] text-zinc-200 select-none sticky top-0 z-50">
+    <header className="bg-[#081226]/95 backdrop-blur-md border-b border-blue-900/60 text-sky-100 select-none sticky top-0 z-50">
       <div className="flex items-center justify-between px-4 py-2.5">
         {/* macOS Traffic Lights + Logo Title */}
         <div className="flex items-center space-x-4">
@@ -28,33 +28,33 @@ export const MacTitleBar: React.FC<MacTitleBarProps> = ({
             <div className="w-3 h-3 rounded-full bg-emerald-500 hover:bg-emerald-600 transition-colors shadow-sm cursor-pointer" title="Expandir" />
           </div>
 
-          <div className="h-4 w-px bg-[#2a2a2a]" />
+          <div className="h-4 w-px bg-blue-900/60" />
 
           {/* App Branding */}
           <div className="flex items-center space-x-2.5">
-            <div className="w-7 h-7 rounded-lg bg-[#F27D26] flex items-center justify-center shadow-md shadow-[#F27D26]/20 text-black">
+            <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center shadow-md shadow-sky-500/30 text-slate-950 font-black">
               <Sliders className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-bold text-sm tracking-wide text-zinc-100">MAT DAW Split Pro</span>
-                <span className="text-[10px] uppercase tracking-wider font-semibold bg-[#F27D26]/20 text-[#F27D26] border border-[#F27D26]/30 px-1.5 py-0.5 rounded font-mono">
-                  v1.0.0
+                <span className="font-bold text-sm tracking-wide text-sky-100">MAT DAW Split Pro</span>
+                <span className="text-[10px] uppercase tracking-wider font-extrabold bg-sky-500/20 text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded font-mono shadow-sm">
+                  v2.0 Azul Pro
                 </span>
               </div>
-              <p className="text-[10px] text-zinc-400">macOS El Capitan (10.11.6+) Native Engine</p>
+              <p className="text-[10px] text-sky-400/60">macOS El Capitan (10.11.6+) High-Sensitivity DSP Engine</p>
             </div>
           </div>
         </div>
 
         {/* Center Mode Navigation Tabs */}
-        <nav className="flex items-center bg-[#0f0f0f] p-1 rounded-lg border border-[#2a2a2a]">
+        <nav className="flex items-center bg-[#050a16] p-1 rounded-lg border border-blue-900/60">
           <button
             onClick={() => setActiveTab('daw')}
             className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
               activeTab === 'daw'
-                ? 'bg-[#F27D26] text-black shadow-sm font-bold'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#1a1a1a]'
+                ? 'bg-sky-500 text-slate-950 shadow-sm font-bold'
+                : 'text-sky-300/70 hover:text-sky-100 hover:bg-blue-950/60'
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
@@ -65,8 +65,8 @@ export const MacTitleBar: React.FC<MacTitleBarProps> = ({
             onClick={() => setActiveTab('sheet_music')}
             className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
               activeTab === 'sheet_music'
-                ? 'bg-[#F27D26] text-black shadow-sm font-bold'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#1a1a1a]'
+                ? 'bg-sky-500 text-slate-950 shadow-sm font-bold'
+                : 'text-sky-300/70 hover:text-sky-100 hover:bg-blue-950/60'
             }`}
           >
             <Music className="w-3.5 h-3.5" />
@@ -77,8 +77,8 @@ export const MacTitleBar: React.FC<MacTitleBarProps> = ({
             onClick={() => setActiveTab('el_capitan_diagnostics')}
             className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
               activeTab === 'el_capitan_diagnostics'
-                ? 'bg-[#F27D26] text-black shadow-sm font-bold'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#1a1a1a]'
+                ? 'bg-sky-500 text-slate-950 shadow-sm font-bold'
+                : 'text-sky-300/70 hover:text-sky-100 hover:bg-blue-950/60'
             }`}
           >
             <Cpu className="w-3.5 h-3.5" />
@@ -89,8 +89,8 @@ export const MacTitleBar: React.FC<MacTitleBarProps> = ({
             onClick={() => setActiveTab('models_manifest')}
             className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
               activeTab === 'models_manifest'
-                ? 'bg-[#F27D26] text-black shadow-sm font-bold'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#1a1a1a]'
+                ? 'bg-sky-500 text-slate-950 shadow-sm font-bold'
+                : 'text-sky-300/70 hover:text-sky-100 hover:bg-blue-950/60'
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -101,8 +101,8 @@ export const MacTitleBar: React.FC<MacTitleBarProps> = ({
             onClick={() => setActiveTab('logs')}
             className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
               activeTab === 'logs'
-                ? 'bg-[#F27D26] text-black shadow-sm font-bold'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-[#1a1a1a]'
+                ? 'bg-sky-500 text-slate-950 shadow-sm font-bold'
+                : 'text-sky-300/70 hover:text-sky-100 hover:bg-blue-950/60'
             }`}
           >
             <Terminal className="w-3.5 h-3.5" />

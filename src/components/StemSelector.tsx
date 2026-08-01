@@ -29,10 +29,10 @@ export const StemSelector: React.FC<StemSelectorProps> = ({
   const groups = ['Voces', 'Batería', 'Instrumentos', 'Otros'] as const;
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl space-y-4">
+    <div className="bg-[#0b1428] border border-blue-900/60 rounded-xl p-4 shadow-xl space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center space-x-2">
-          <CheckSquare className="w-4 h-4 text-indigo-400" />
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-sky-300 flex items-center space-x-2">
+          <CheckSquare className="w-4 h-4 text-sky-400" />
           <span>2. Selección de Pistas a Extraer</span>
         </h2>
 
@@ -40,13 +40,13 @@ export const StemSelector: React.FC<StemSelectorProps> = ({
         <div className="flex items-center space-x-2 text-xs">
           <button
             onClick={onSelectAll}
-            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+            className="px-2.5 py-1 rounded bg-blue-950/80 hover:bg-blue-900 text-sky-200 transition-colors border border-blue-800/60"
           >
             Todas
           </button>
           <button
             onClick={onSelectNone}
-            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+            className="px-2.5 py-1 rounded bg-blue-950/80 hover:bg-blue-900 text-sky-200 transition-colors border border-blue-800/60"
           >
             Ninguna
           </button>
@@ -126,17 +126,17 @@ export const StemSelector: React.FC<StemSelectorProps> = ({
       </div>
 
       {/* Output Folder Picker */}
-      <div className="bg-slate-950/80 border border-slate-800 rounded-lg p-3 space-y-2">
-        <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+      <div className="bg-[#050a16] border border-blue-900/60 rounded-lg p-3 space-y-2">
+        <label className="text-[11px] font-semibold text-sky-300 uppercase tracking-wider block">
           3. Carpeta de Trabajo y Exportación
         </label>
         <div className="flex items-center space-x-2">
-          <div className="flex-1 bg-slate-900 border border-slate-800 rounded px-3 py-1.5 font-mono text-xs text-slate-300 truncate">
+          <div className="flex-1 bg-[#091124] border border-blue-900/60 rounded px-3 py-1.5 font-mono text-xs text-sky-200 truncate">
             {outputDirectory}
           </div>
           <button
             onClick={onSelectOutputDirectory}
-            className="flex items-center space-x-1 px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 transition-colors shrink-0"
+            className="flex items-center space-x-1 px-3 py-1.5 rounded bg-blue-950/80 hover:bg-blue-900 text-xs text-sky-200 border border-blue-800/60 transition-colors shrink-0"
           >
             <Folder className="w-3.5 h-3.5 text-amber-400" />
             <span>Elegir...</span>
@@ -150,10 +150,10 @@ export const StemSelector: React.FC<StemSelectorProps> = ({
         disabled={isProcessing || !hasAudioFile || selectedStems.length === 0}
         className={`w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center space-x-2 shadow-lg transition-all ${
           isProcessing
-            ? 'bg-purple-600/50 text-purple-200 cursor-wait'
+            ? 'bg-sky-700/50 text-sky-200 cursor-wait'
             : !hasAudioFile || selectedStems.length === 0
-            ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/50'
-            : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white shadow-indigo-600/30 hover:scale-[1.01]'
+            ? 'bg-blue-950/50 text-sky-400/40 cursor-not-allowed border border-blue-900/40'
+            : 'bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 hover:from-blue-500 hover:to-sky-400 text-slate-950 font-black shadow-sky-500/20 hover:scale-[1.01]'
         }`}
       >
         <Sparkles className="w-4 h-4 text-amber-300" />

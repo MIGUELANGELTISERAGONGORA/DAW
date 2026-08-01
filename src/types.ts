@@ -47,7 +47,9 @@ export interface AudioTrackState {
   category: StemCategory;
   color: string;
   buffer: AudioBuffer;
-  volume: number; // 0.0 to 1.5 (0 to +3.5dB)
+  volume: number; // 0.0 to 2.5 (0 to +12dB)
+  pan?: number; // -1.0 (Left) to +1.0 (Right)
+  sensitivity?: number; // 1.0 to 3.0 (Sensibilidad de aislamiento/ganancia)
   isMuted: boolean;
   isSolo: boolean;
   peakLevel: number; // 0 to 1 for VU meter
