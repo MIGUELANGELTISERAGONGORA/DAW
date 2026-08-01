@@ -75,10 +75,10 @@ class FastFFT {
 }
 
 /**
- * High-precision STFT Spectral Masking Stem Separator v2.1 (Azul Pro)
- * Performs Short-Time Fourier Transform (STFT) with 2048-point FFT and 75% overlap.
- * Uses Mid-Side Phase Coherence, Spectral Flux Transient Gating, and Harmonic Wiener Filters
- * to isolate Vocals, Drums, Bass, Guitars, Piano/Keys, and Residuals cleanly from MP3/WAV.
+ * High-Precision STFT Spectral Masking Stem Separator v2.1 Azul Pro
+ * Short-Time Fourier Transform (STFT 2048-point FFT, 75% overlap)
+ * Isolates Vocals, Drums, Bass, Guitars, Piano/Keys, and Residuals cleanly from MP3/WAV,
+ * supporting both Stereo and Mono audio signals seamlessly with robust harmonic Wiener filters.
  */
 export async function separateAudioBufferDSP(
   audioCtx: AudioContext,
@@ -93,6 +93,19 @@ export async function separateAudioBufferDSP(
   // Extract raw PCM channels
   const leftChannel = sourceBuffer.getChannelData(0);
   const rightChannel = numChannels > 1 ? sourceBuffer.getChannelData(1) : leftChannel;
+
+  // Check if audio file is mono or has narrow stereo image
+  let isMonoFile = numChannels === 1;
+  if (!isMonoFile) {
+    let diffSum = 0;
+    const checkLen = Math.min(length, sampleRate * 10);
+    for (let i = 0; i < checkLen; i += 100) {
+      diffSum += Math.abs(leftChannel[i] - rightChannel[i]);
+    }
+    if (diffSum / (checkLen / 100) < 0.005) {
+      isMonoFile = true;
+    }
+  }
 
   // STFT Configuration
   const FFT_SIZE = 2048;
@@ -146,7 +159,7 @@ export async function separateAudioBufferDSP(
   let lastProgressUpdate = 0;
 
   if (onProgress) {
-    onProgress(5, 'Iniciando Transformada de Fourier Espectral (STFT 2048 pts)...', 'Engine STFT v2.1 Azul Pro');
+    onProgress(5, 'Iniciando Transformada de Fourier Espectral (STFT 2048 pts)...', 'Engine STFT v2.2 Azul Pro');
   }
 
   // Main STFT Loop across time frames
@@ -160,8 +173,8 @@ export async function separateAudioBufferDSP(
       if (onProgress) {
         onProgress(
           currentProgress,
-          `Aislando instrumentos por espectro de frecuencia (${Math.round((startSample / sampleRate))}s / ${Math.round(sourceBuffer.duration)}s)...`,
-          'Multi-Band Spectral Masking v2.1'
+          `Aislando instrumentos por espectro de frecuencia v2.2 (${Math.round((startSample / sampleRate))}s / ${Math.round(sourceBuffer.duration)}s)...`,
+          'Multi-Band Spectral Masking v2.2'
         );
       }
       // Yield to UI thread so audio/progress bar updates smoothly
@@ -195,68 +208,68 @@ export async function separateAudioBufferDSP(
 
       const magM = Math.sqrt(rM * rM + iM * iM);
       const magS = Math.sqrt(rS * rS + iS * iS);
-      const magL = Math.sqrt(rL * rL + iL * iL);
-      const magR = Math.sqrt(rR * rR + iR * iR);
 
       // Mid-Side Center Dominance Ratio (1.0 = Pure mono center, 0.0 = Pure side)
-      const centerRatio = magM / (magM + magS + 1e-6);
+      const centerRatio = (magM + magS) > 1e-6 ? magM / (magM + magS) : 0.5;
 
       // Transient Flux (Attack detection per bin)
       const flux = Math.max(0, magM - prevMagM[bin]);
       prevMagM[bin] = magM;
       const fluxRatio = flux / (magM + 1e-4);
 
-      // --- STEM SPECIFIC MASKS --- //
+      // --- STEM SPECIFIC MASKS v2.1 --- //
 
-      // A) Vocals Mask (Center panned, 110Hz to 9500Hz, core formant 250Hz-4500Hz)
+      // A) Vocals Mask (140Hz to 8500Hz, Formant peak 300Hz-3800Hz)
       let wVocal = 0;
-      if (freq >= 110 && freq <= 9500) {
-        const freqWeight = freq < 280
-          ? (freq - 110) / 170
-          : freq > 4500
-          ? 1.0 - (freq - 4500) / 5000
+      if (freq >= 140 && freq <= 8800) {
+        const freqWeight = freq < 300
+          ? (freq - 140) / 160
+          : freq > 3800
+          ? Math.max(0, 1.0 - (freq - 3800) / 5000)
           : 1.0;
 
-        const centerBonus = Math.pow(centerRatio, 1.4);
-        const transientPenalty = Math.max(0, 1.0 - fluxRatio * 2.0);
-        wVocal = freqWeight * centerBonus * transientPenalty;
+        const centerBonus = isMonoFile ? 0.75 : Math.pow(centerRatio, 1.2);
+        const transientPenalty = Math.max(0, 1.0 - fluxRatio * 1.8);
+        wVocal = freqWeight * centerBonus * transientPenalty * 0.85;
       }
 
-      // B) Drums Mask (Sub-kick 30-130Hz, Snare/Toms 140-4000Hz, Cymbals >4000Hz)
+      // B) Drums Mask (Sub-kick 35-140Hz, Snare/Toms 150-3800Hz, Cymbals >4000Hz)
       let wDrum = 0;
-      if (freq >= 30 && freq <= 130) {
-        wDrum = Math.min(1.0, (fluxRatio * 2.8) + (magM > 0.015 ? 0.75 : 0.2));
-      } else if (freq > 130 && freq <= 4000) {
-        wDrum = Math.min(1.0, fluxRatio * 3.2);
-      } else if (freq > 4000 && freq <= 18000) {
-        wDrum = Math.min(1.0, (fluxRatio * 2.2) + (magS > magM ? 0.45 : 0.1));
+      if (freq >= 30 && freq <= 140) {
+        wDrum = Math.min(1.0, (fluxRatio * 3.0) + (magM > 0.015 ? 0.8 : 0.25));
+      } else if (freq > 140 && freq <= 3800) {
+        wDrum = Math.min(1.0, fluxRatio * 3.4);
+      } else if (freq > 3800 && freq <= 18000) {
+        wDrum = Math.min(1.0, (fluxRatio * 2.5) + (magS > magM ? 0.5 : 0.2));
       }
 
-      // C) Bass Mask (30Hz to 260Hz, Center panned, low flux)
+      // C) Bass Mask (35Hz to 280Hz, Low-pass, low transient flux)
       let wBass = 0;
-      if (freq >= 30 && freq <= 260) {
-        const lowpass = freq < 180 ? 1.0 : 1.0 - (freq - 180) / 80;
-        const bassCenter = Math.pow(centerRatio, 1.8);
-        const nonTrans = Math.max(0, 1.0 - fluxRatio * 1.6);
-        wBass = lowpass * bassCenter * nonTrans;
+      if (freq >= 35 && freq <= 280) {
+        const lowpass = freq < 180 ? 1.0 : Math.max(0, 1.0 - (freq - 180) / 100);
+        const bassCenter = isMonoFile ? 0.85 : Math.pow(centerRatio, 1.5);
+        const nonTrans = Math.max(0, 1.0 - fluxRatio * 1.5);
+        wBass = lowpass * bassCenter * nonTrans * 0.9;
       }
 
-      // D) Guitars Mask (150Hz to 7500Hz, Stereo Side content or mid-spread)
+      // D) Guitars Mask (160Hz to 7200Hz, String attacks & body resonance)
       let wGuitar = 0;
-      if (freq >= 150 && freq <= 7500) {
-        const sideRatio = magS / (magM + magS + 1e-6);
-        const freqWeight = freq < 250 ? (freq - 150) / 100 : 1.0;
-        wGuitar = freqWeight * (Math.pow(sideRatio, 0.75) + (1.0 - centerRatio) * 0.55);
+      if (freq >= 160 && freq <= 7200) {
+        const freqWeight = freq < 260 ? (freq - 160) / 100 : 1.0;
+        const sideBoost = isMonoFile ? 0.45 : Math.pow(magS / (magM + magS + 1e-6), 0.7) * 0.7 + 0.3;
+        const guitarAttack = (fluxRatio > 0.08 && fluxRatio < 0.4) ? 1.2 : 0.8;
+        wGuitar = freqWeight * sideBoost * guitarAttack * 0.65;
       }
 
-      // E) Piano / Keyboards Mask (140Hz to 5500Hz, Harmonic sustained notes)
+      // E) Piano / Keyboards Mask (130Hz to 6000Hz, Harmonic sustained notes)
       let wPiano = 0;
-      if (freq >= 140 && freq <= 5500) {
-        const nonTrans = Math.max(0, 1.0 - fluxRatio * 2.5);
-        wPiano = nonTrans * Math.pow(centerRatio, 0.6) * 0.65;
+      if (freq >= 130 && freq <= 6000) {
+        const nonTrans = Math.max(0, 1.0 - fluxRatio * 2.0);
+        const pianoCenter = isMonoFile ? 0.6 : Math.pow(centerRatio, 0.5);
+        wPiano = nonTrans * pianoCenter * 0.6;
       }
 
-      // Wiener Mask Normalization
+      // Wiener Mask Normalization v2.1
       const maskSum = wVocal + wDrum + wBass + wGuitar + wPiano + 1e-6;
       if (maskSum > 1.0) {
         wVocal /= maskSum;
@@ -297,7 +310,7 @@ export async function separateAudioBufferDSP(
   }
 
   if (onProgress) {
-    onProgress(92, 'Normalizando ganancia y estructurando pistas...', 'Engine STFT v2.1 Azul Pro');
+    onProgress(92, 'Normalizando ganancia y estructurando pistas v2.2...', 'Engine STFT v2.2 Azul Pro');
   }
   await new Promise((r) => setTimeout(r, 40));
 
@@ -306,7 +319,7 @@ export async function separateAudioBufferDSP(
   // 1. Vocals
   if (selectedStems.includes('vocals_all')) {
     const buf = audioCtx.createBuffer(2, length, sampleRate);
-    normalizeAndCopyBuffer(buf, vocalL, vocalR, 1.3);
+    normalizeAndCopyBuffer(buf, vocalL, vocalR, 1.35);
     stemResults.push({
       id: `vocal-${Date.now()}`,
       name: 'Voces Principal & Coros',
@@ -325,7 +338,7 @@ export async function separateAudioBufferDSP(
   // 2. Drums
   if (selectedStems.includes('drums_all')) {
     const buf = audioCtx.createBuffer(2, length, sampleRate);
-    normalizeAndCopyBuffer(buf, drumL, drumR, 1.25);
+    normalizeAndCopyBuffer(buf, drumL, drumR, 1.3);
     stemResults.push({
       id: `drum-${Date.now()}`,
       name: 'Batería Completa (Kick, Snare, Hats)',
@@ -344,7 +357,7 @@ export async function separateAudioBufferDSP(
   // 3. Bass
   if (selectedStems.includes('bass')) {
     const buf = audioCtx.createBuffer(2, length, sampleRate);
-    normalizeAndCopyBuffer(buf, bassL, bassR, 1.35);
+    normalizeAndCopyBuffer(buf, bassL, bassR, 1.4);
     stemResults.push({
       id: `bass-${Date.now()}`,
       name: 'Bajo Eléctrico',
@@ -363,7 +376,7 @@ export async function separateAudioBufferDSP(
   // 4. Guitar
   if (selectedStems.includes('guitar_all')) {
     const buf = audioCtx.createBuffer(2, length, sampleRate);
-    normalizeAndCopyBuffer(buf, gtrL, gtrR, 1.3);
+    normalizeAndCopyBuffer(buf, gtrL, gtrR, 1.35);
     stemResults.push({
       id: `guitar-${Date.now()}`,
       name: 'Guitarra Acústica / Eléctrica',
@@ -382,7 +395,7 @@ export async function separateAudioBufferDSP(
   // 5. Piano & Keys
   if (selectedStems.includes('piano_keys')) {
     const buf = audioCtx.createBuffer(2, length, sampleRate);
-    normalizeAndCopyBuffer(buf, pianoL, pianoR, 1.25);
+    normalizeAndCopyBuffer(buf, pianoL, pianoR, 1.3);
     stemResults.push({
       id: `piano-${Date.now()}`,
       name: 'Piano & Teclados',
@@ -401,7 +414,7 @@ export async function separateAudioBufferDSP(
   // 6. Other
   if (selectedStems.includes('other')) {
     const buf = audioCtx.createBuffer(2, length, sampleRate);
-    normalizeAndCopyBuffer(buf, otherL, otherR, 1.15);
+    normalizeAndCopyBuffer(buf, otherL, otherR, 1.2);
     stemResults.push({
       id: `other-${Date.now()}`,
       name: 'Other (Resto de la Mezcla)',
@@ -418,7 +431,7 @@ export async function separateAudioBufferDSP(
   }
 
   if (onProgress) {
-    onProgress(100, 'Separación de instrumentos v2.1 completada con alta sensibilidad.', 'Finalizado');
+    onProgress(100, 'Separación de instrumentos v2.2 completada con alta sensibilidad.', 'Finalizado');
   }
 
   return stemResults;
@@ -478,7 +491,7 @@ function normalizeAndCopyBuffer(
   targetBuffer: AudioBuffer,
   leftData: Float32Array,
   rightData: Float32Array,
-  gainMultiplier = 1.25
+  gainMultiplier = 1.3
 ) {
   let maxPeak = 0.0001;
   const len = leftData.length;
@@ -491,7 +504,7 @@ function normalizeAndCopyBuffer(
   }
 
   // Dynamic gain normalization factor
-  const normFactor = Math.min(3.0, (0.88 / maxPeak)) * gainMultiplier;
+  const normFactor = Math.min(3.5, (0.88 / maxPeak)) * gainMultiplier;
 
   const outL = targetBuffer.getChannelData(0);
   const outR = targetBuffer.getChannelData(1);

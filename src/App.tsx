@@ -392,6 +392,18 @@ export default function App() {
         )}
       </main>
 
+      {/* Footer Branding & Author Credit */}
+      <footer className="border-t border-blue-900/40 bg-[#040814] px-4 py-2 text-center text-xs text-sky-300/60 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="flex items-center space-x-2">
+          <span className="font-bold text-sky-200">MAT DAW Split Pro v2.2</span>
+          <span>•</span>
+          <span>Separador Multicanal de Audio & DAW Espectral</span>
+        </div>
+        <div className="font-semibold text-sky-300/90">
+          Desarrollado por <span className="text-sky-200 font-bold">Miguel Ángel Tisera</span>
+        </div>
+      </footer>
+
       {/* Sheet Music Score Modal */}
       {sheetMusicTrack && (
         <SheetMusicModal

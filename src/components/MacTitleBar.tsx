@@ -39,10 +39,12 @@ export const MacTitleBar: React.FC<MacTitleBarProps> = ({
               <div className="flex items-center space-x-2">
                 <span className="font-bold text-sm tracking-wide text-sky-100">MAT DAW Split Pro</span>
                 <span className="text-[10px] uppercase tracking-wider font-extrabold bg-sky-500/20 text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded font-mono shadow-sm">
-                  v2.1 Azul Pro
+                  v2.2 Azul Pro
                 </span>
               </div>
-              <p className="text-[10px] text-sky-400/60">macOS El Capitan (10.11.6+) High-Sensitivity DSP Engine</p>
+              <p className="text-[10px] text-sky-300/80 font-medium">
+                Desarrollado por Miguel Ángel Tisera • Engine DSP macOS 10.11+
+              </p>
             </div>
           </div>
         </div>
