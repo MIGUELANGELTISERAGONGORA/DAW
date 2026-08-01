@@ -14,22 +14,33 @@ export function frequencyToMidi(freq: number): number {
   return Math.round(69 + 12 * Math.log2(freq / 440));
 }
 
-// Autocorrelation pitch detection algorithm for audio channel buffer
+// Enhanced pitch detection algorithm with Beat Grid Quantization & Harmonic Overtone Suppression
 export function detectPitchesFromBuffer(
   audioBuffer: AudioBuffer,
-  maxNotes: number = 28
+  maxNotes: number = 32,
+  bpm: number = 120,
+  quantizationGrid: '1/4' | '1/8' | '1/16' | '1/32' | 'none' = '1/16',
+  filterHarmonics: boolean = true
 ): NoteInfo[] {
   const pcmData = audioBuffer.getChannelData(0);
   const sampleRate = audioBuffer.sampleRate;
   const duration = audioBuffer.duration;
   
+  // Calculate grid resolution in seconds
+  let gridStep = 0.125; // Default 1/16 note at 120bpm
+  if (quantizationGrid !== 'none') {
+    const secondsPerBeat = 60 / (bpm || 120);
+    const gridMultiplier = quantizationGrid === '1/4' ? 1.0 : quantizationGrid === '1/8' ? 0.5 : quantizationGrid === '1/16' ? 0.25 : 0.125;
+    gridStep = secondsPerBeat * gridMultiplier;
+  }
+
   const windowSize = Math.floor(sampleRate * 0.08); // 80ms window
-  const hopSize = Math.floor(sampleRate * 0.25); // Hop 250ms (~quarter note at 120bpm)
+  const hopSize = Math.floor(sampleRate * 0.125);   // 125ms hop
   
-  const rawNotes: { midi: number; time: number; duration: number; volume: number }[] = [];
+  const rawDetections: { midi: number; time: number; duration: number; volume: number }[] = [];
   
   for (let i = 0; i < pcmData.length - windowSize; i += hopSize) {
-    const time = i / sampleRate;
+    const rawTime = i / sampleRate;
     const window = pcmData.subarray(i, i + windowSize);
     
     // Calculate RMS volume
@@ -39,14 +50,14 @@ export function detectPitchesFromBuffer(
     }
     rms = Math.sqrt(rms / window.length);
     
-    if (rms < 0.02) continue; // Skip quiet parts/silence
+    if (rms < 0.018) continue; // Skip silence
     
-    // Autocorrelation
+    // Autocorrelation Pitch Tracking
     let bestCorrelation = -1;
     let bestPeriod = -1;
     
-    const minPeriod = Math.floor(sampleRate / 1000); // 1000 Hz max pitch
-    const maxPeriod = Math.floor(sampleRate / 50);   // 50 Hz min pitch
+    const minPeriod = Math.floor(sampleRate / 1200); // Max 1200 Hz
+    const maxPeriod = Math.floor(sampleRate / 45);   // Min 45 Hz
     
     for (let period = minPeriod; period <= maxPeriod; period++) {
       let sum = 0;
@@ -61,13 +72,28 @@ export function detectPitchesFromBuffer(
     
     if (bestPeriod > 0) {
       const frequency = sampleRate / bestPeriod;
-      const midi = frequencyToMidi(frequency);
+      let midi = frequencyToMidi(frequency);
       
-      if (midi >= 36 && midi <= 96) { // Valid musical range C2 - C7
-        rawNotes.push({
+      // Harmonic Overtone Filter: Check if this is an octave overtone (+12, +19, +24 semitones)
+      if (filterHarmonics && rawDetections.length > 0) {
+        const prevMidi = rawDetections[rawDetections.length - 1].midi;
+        const diff = midi - prevMidi;
+        if (diff === 12 || diff === 19 || diff === 24) {
+          // Attenuate overtone by pulling down to fundamental
+          midi = prevMidi;
+        }
+      }
+
+      if (midi >= 28 && midi <= 98) { // C1 - D7 range
+        // Snap time to tempo grid if enabled
+        const snappedTime = quantizationGrid !== 'none'
+          ? Math.round(rawTime / gridStep) * gridStep
+          : rawTime;
+
+        rawDetections.push({
           midi,
-          time,
-          duration: 0.25,
+          time: snappedTime,
+          duration: gridStep,
           volume: rms,
         });
       }
@@ -75,20 +101,20 @@ export function detectPitchesFromBuffer(
   }
 
   // Fallback if audio buffer pitch detection yielded sparse results
-  if (rawNotes.length < 4) {
+  if (rawDetections.length < 4) {
     return generateSyntheticScoreNotes(duration);
   }
 
-  // Clean & quantize notes
+  // Group continuous pitch events & clean note durations
   const notes: NoteInfo[] = [];
   let currentNote: { midi: number; time: number; duration: number } | null = null;
 
-  for (const n of rawNotes) {
+  for (const n of rawDetections) {
     if (!currentNote) {
       currentNote = { ...n };
-    } else if (Math.abs(currentNote.midi - n.midi) <= 1 && n.time - (currentNote.time + currentNote.duration) < 0.15) {
-      // Extend duration if pitch is continuous
-      currentNote.duration += 0.25;
+    } else if (Math.abs(currentNote.midi - n.midi) <= 1 && n.time - (currentNote.time + currentNote.duration) <= gridStep * 1.2) {
+      // Extend duration if pitch is continuous on grid
+      currentNote.duration += gridStep;
     } else {
       // Finalize note
       const midi = currentNote.midi;
@@ -96,9 +122,9 @@ export function detectPitchesFromBuffer(
       notes.push({
         pitch: midiToPitch(midi),
         midiNote: midi,
-        time: Math.round(currentNote.time * 10) / 10,
-        duration: Math.round(currentNote.duration * 10) / 10,
-        velocity: 0.8,
+        time: Math.round(currentNote.time * 100) / 100,
+        duration: Math.round(currentNote.duration * 100) / 100,
+        velocity: 0.85,
         noteType,
         clef: midi < 60 ? 'bass' : 'treble',
       });
@@ -112,9 +138,9 @@ export function detectPitchesFromBuffer(
     notes.push({
       pitch: midiToPitch(currentNote.midi),
       midiNote: currentNote.midi,
-      time: Math.round(currentNote.time * 10) / 10,
-      duration: Math.round(currentNote.duration * 10) / 10,
-      velocity: 0.8,
+      time: Math.round(currentNote.time * 100) / 100,
+      duration: Math.round(currentNote.duration * 100) / 100,
+      velocity: 0.85,
       noteType: getNoteTypeFromDuration(currentNote.duration),
       clef: currentNote.midi < 60 ? 'bass' : 'treble',
     });

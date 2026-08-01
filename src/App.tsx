@@ -58,7 +58,7 @@ export default function App() {
 
   // Master System Logs
   const [systemLogs, setSystemLogs] = useState<string[]>([
-    '[INIT] MAT DAW Split Pro Engine v2.33 iniciado.',
+    '[INIT] MAT DAW Split Pro Engine v2.4 iniciado.',
     '[INIT] Entorno OS X El Capitan 10.11.6 (x86_64) verificado.',
     '[INIT] Módulo ML de Transcripción de Audio a Partitura MusicXML cargado.',
     '[INIT] Runtime Python 3.9 relocalizable detectado en bundle /Applications/Limbus Split Pro.app',
@@ -482,7 +482,7 @@ export default function App() {
       {/* Footer Branding & Author Credit */}
       <footer className="border-t border-blue-900/40 bg-[#040814] px-4 py-2.5 text-center text-xs text-sky-300/60 flex flex-col sm:flex-row items-center justify-between gap-2">
         <div className="flex items-center space-x-2">
-          <span className="font-bold text-sky-200">MAT DAW Split Pro v2.33</span>
+          <span className="font-bold text-sky-200">MAT DAW Split Pro v2.4</span>
           <span>•</span>
           <span>Separador Multicanal de Audio & DAW Espectral</span>
         </div>

@@ -96,7 +96,7 @@ export const SheetMusicModule: React.FC<SheetMusicModuleProps> = ({
       const initialScores: GeneratedScoreItem[] = tracks.map((t) => {
         const detectedNotes = t.notes && t.notes.length > 0
           ? t.notes
-          : detectPitchesFromBuffer(t.buffer, 32);
+          : detectPitchesFromBuffer(t.buffer, 32, 120, '1/16', true);
 
         return {
           id: `score-${t.id}-${Date.now()}`,
@@ -215,7 +215,13 @@ export const SheetMusicModule: React.FC<SheetMusicModuleProps> = ({
       const track = tracks.find((t) => t.id === trackId);
       if (!track) continue;
 
-      const notes = detectPitchesFromBuffer(track.buffer, 36);
+      const notes = detectPitchesFromBuffer(
+        track.buffer,
+        36,
+        config.bpm,
+        config.quantization,
+        true
+      );
       const chosenClef = config.clef === 'auto'
         ? (track.category === 'bass' ? 'bass' : track.category === 'drum_kick' ? 'percussion' : 'treble')
         : config.clef;
