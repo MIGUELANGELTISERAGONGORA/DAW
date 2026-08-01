@@ -290,7 +290,8 @@ export class AudioEngine {
     const hasSolo = tracks.some(t => t.isSolo);
 
     for (const track of tracks) {
-      let gainVal = track.volume;
+      const sensitivityBoost = track.sensitivity || 1.0;
+      let gainVal = track.volume * sensitivityBoost;
       if (track.isMuted) gainVal = 0;
       else if (hasSolo && !track.isSolo) gainVal = 0;
 
@@ -303,7 +304,16 @@ export class AudioEngine {
       gain.gain.value = gainVal;
 
       src.connect(gain);
-      gain.connect(offlineCtx.destination);
+
+      if (offlineCtx.createStereoPanner && track.pan !== undefined && track.pan !== 0) {
+        const panner = offlineCtx.createStereoPanner();
+        panner.pan.value = Math.max(-1, Math.min(1, track.pan));
+        gain.connect(panner);
+        panner.connect(offlineCtx.destination);
+      } else {
+        gain.connect(offlineCtx.destination);
+      }
+
       src.start(0);
     }
 
