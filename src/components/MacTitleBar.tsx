@@ -18,7 +18,7 @@ export const MacTitleBar: React.FC<MacTitleBarProps> = ({
   outputDirectory,
 }) => {
   return (
-    <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-700/80 text-slate-100 select-none sticky top-0 z-50">
+    <header className="bg-[#081226]/95 backdrop-blur-md border-b border-blue-900/60 text-sky-100 select-none sticky top-0 z-50">
       <div className="flex items-center justify-between px-4 py-2.5">
         {/* macOS Traffic Lights + Logo Title */}
         <div className="flex items-center space-x-4">
@@ -28,21 +28,21 @@ export const MacTitleBar: React.FC<MacTitleBarProps> = ({
             <div className="w-3 h-3 rounded-full bg-emerald-500 hover:bg-emerald-600 transition-colors shadow-sm cursor-pointer" title="Expandir" />
           </div>
 
-          <div className="h-4 w-px bg-slate-700/80" />
+          <div className="h-4 w-px bg-blue-900/60" />
 
           {/* App Branding */}
           <div className="flex items-center space-x-2.5">
-            <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center shadow-md shadow-sky-500/30 text-white font-black">
+            <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center shadow-md shadow-sky-500/30 text-slate-950 font-black">
               <Sliders className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-bold text-sm tracking-wide text-white">MAT DAW Split Pro</span>
+                <span className="font-bold text-sm tracking-wide text-sky-100">MAT DAW Split Pro</span>
                 <span className="text-[10px] uppercase tracking-wider font-extrabold bg-sky-500/20 text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded font-mono shadow-sm">
-                  v2.3 Light Pro
+                  v2.31 Azul Pro
                 </span>
               </div>
-              <p className="text-[10px] text-sky-200/90 font-medium">
+              <p className="text-[10px] text-sky-300/80 font-medium">
                 Desarrollado por Miguel Ángel Tisera • Engine Softmax DSP
               </p>
             </div>

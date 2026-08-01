@@ -38,22 +38,24 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         {/* Modal Content */}
         <div className="p-5 space-y-4">
           {/* Progress Bar & Stage */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="text-slate-200">{progress.stage}</span>
-              <span className="font-mono text-indigo-400">{Math.round(progress.progress)}%</span>
+          <div className="space-y-2.5 bg-[#050b18] p-3.5 rounded-xl border border-red-900/50">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span className="text-sky-100">{progress.stage}</span>
+              <span className="font-mono text-red-400 font-black text-sm bg-red-950/90 text-red-400 border border-red-500/60 px-2.5 py-0.5 rounded-md shadow-[0_0_12px_rgba(239,68,68,0.5)]">
+                {Math.round(progress.progress)}%
+              </span>
             </div>
 
-            <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-800 p-0.5">
+            <div className="w-full h-4 bg-slate-950 rounded-full overflow-hidden border border-red-800/80 p-0.5 shadow-[0_0_15px_rgba(220,38,38,0.3)]">
               <div
-                className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full transition-all duration-300"
+                className="h-full bg-gradient-to-r from-red-700 via-red-500 to-rose-500 rounded-full transition-all duration-300 shadow-[0_0_15px_rgba(239,68,68,0.9)]"
                 style={{ width: `${progress.progress}%` }}
               />
             </div>
 
-            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+            <div className="flex justify-between text-[10px] text-sky-400/70 font-mono font-medium">
               <span>Modelo: {progress.currentModel}</span>
-              <span>Motor ONNX C++ Local</span>
+              <span>Motor Softmax DSP v2.31 Local</span>
             </div>
           </div>
 
